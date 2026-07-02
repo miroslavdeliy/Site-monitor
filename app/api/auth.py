@@ -7,6 +7,13 @@ from app.dependencies.database import get_db
 from app.schemas.auth import UserRegister
 from app.schemas.auth import UserResponse
 from app.services.auth_service import register_user
+from app.core.security import create_access_token
+from app.schemas.auth import UserLogin
+from app.schemas.auth import TokenResponse
+from app.services.auth_service import authenticate_user
+from app.dependencies.auth import get_current_user
+from app.models.user import User
+
 
 router = APIRouter(
     prefix="/auth",
@@ -34,3 +41,46 @@ def register(
         )
 
     return user
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse
+)
+def login(
+        credentials: UserLogin,
+        db: Session = Depends(get_db)
+):
+    user = authenticate_user(
+        db,
+        credentials.email,
+        credentials.password
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+
+    access_token = create_access_token(
+        {
+            "sub": str(user.id)
+        }
+    )
+
+    return TokenResponse(
+        access_token=access_token
+    )
+
+
+@router.get(
+    "/me",
+    response_model=UserResponse
+)
+def me(
+        current_user: User = Depends(
+            get_current_user
+        )
+):
+    return current_user
