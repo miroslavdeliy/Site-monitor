@@ -1,11 +1,7 @@
 from fastapi import FastAPI
 
-app = FastAPI(
-    title="Site Monitor API",
-    version="0.1.0"
-)
+from app.api.auth import router as auth_router
 
+app = FastAPI()
 
-@app.get("/")
-async def root():
-    return {"message": "Service is running"}
+app.include_router(auth_router)
